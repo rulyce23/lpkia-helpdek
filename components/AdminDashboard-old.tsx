@@ -3,11 +3,34 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { formatDate, getStatusColor, getPriorityColor, getDepartmentColor } from '@/lib/utils'
-import type { DBTicket, DBUser } from '@/types'
+
+interface Ticket {
+  id: number
+  ticket_number: string
+  student_name: string
+  student_email: string
+  student_phone?: string
+  category: string
+  subject: string
+  description: string
+  status: string
+  priority: string
+  assigned_username?: string
+  assigned_name?: string
+  created_at: string
+  updated_at: string
+}
 
 interface AdminDashboardProps {
-  tickets: DBTicket[]
-  currentUser: DBUser
+  tickets: Ticket[]
+  currentUser: {
+    id: number
+    username: string
+    full_name: string
+    email: string
+    department: string
+    role: string
+  }
   onLogout: () => void
   onRefresh: () => void
 }
@@ -17,7 +40,7 @@ export default function AdminDashboard({ tickets, currentUser, onLogout, onRefre
   const [filterCategory, setFilterCategory] = useState<string>('All')
 
   // Filter tickets by user's department
-  const departmentTickets = tickets.filter((ticket) =>
+  const departmentTickets = tickets.filter((ticket) => 
     filterCategory === 'All' || ticket.category === filterCategory
   )
 
@@ -51,13 +74,13 @@ export default function AdminDashboard({ tickets, currentUser, onLogout, onRefre
               </p>
             </div>
             <div className="flex gap-3">
-              <button
+              <button 
                 onClick={onRefresh}
                 className="btn-secondary"
               >
                 🔄 Refresh
               </button>
-              <button
+              <button 
                 onClick={onLogout}
                 className="btn-secondary"
               >
