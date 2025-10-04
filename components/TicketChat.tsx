@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { getPusherClient } from '@/lib/pusher'
 import { formatDate } from '@/lib/utils'
-import type { SupportTicket, TicketMessage, SenderType } from '@/types'
+import type { DBTicket, DBMessage, SenderType } from '@/types'
 
 interface TicketChatProps {
-  ticket: SupportTicket
-  initialMessages: TicketMessage[]
+  ticket: DBTicket
+  initialMessages: DBMessage[]
 }
 
 export default function TicketChat({ ticket, initialMessages }: TicketChatProps) {
-  const [messages, setMessages] = useState<TicketMessage[]>(initialMessages)
+  const [messages, setMessages] = useState<DBMessage[]>(initialMessages)
   const [newMessage, setNewMessage] = useState('')
   const [senderName, setSenderName] = useState('')
   const [senderType, setSenderType] = useState<SenderType>('Student')
@@ -21,17 +21,17 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
   useEffect(() => {
     // Subscribe to real-time updates
     const pusherClient = getPusherClient()
-    const channel = pusherClient.subscribe(`ticket-${ticket.slug}`)
-    
+    const channel = pusherClient.subscribe(`ticket-${ticket.ticket_number}`)
+
     channel.bind('new-message', (data: any) => {
       // Refresh messages
       fetchMessages()
     })
 
     return () => {
-      pusherClient.unsubscribe(`ticket-${ticket.slug}`)
+      pusherClient.unsubscribe(`ticket-${ticket.ticket_number}`)
     }
-  }, [ticket.slug])
+  }, [ticket.ticket_number])
 
   useEffect(() => {
     scrollToBottom()
@@ -43,7 +43,7 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`/api/messages?ticket_number=${ticket.slug}`)
+      const response = await fetch(`/api/messages?ticket_number=${ticket.ticket_number}`)
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
@@ -57,7 +57,7 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!newMessage.trim() || !senderName.trim()) {
       alert('Mohon isi nama dan pesan')
       return
@@ -70,7 +70,7 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ticket_number: ticket.slug,
+          ticket_number: ticket.ticket_number,
           sender_name: senderName,
           sender_type: senderType,
           message: newMessage,
@@ -114,10 +114,8 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
           </div>
         ) : (
           messages.map((message) => {
-            if (!message.metadata) return null
-            
-            const isSupport = message.metadata.sender_type !== 'Student'
-            
+            const isSupport = message.sender_type !== 'Student'
+
             return (
               <div
                 key={message.id}
@@ -125,11 +123,11 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
               >
                 <div className={`max-w-[70%] ${isSupport ? '' : 'text-right'}`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`badge text-xs ${getSenderColor(message.metadata.sender_type)}`}>
-                      {message.metadata.sender_type}
+                    <span className={`badge text-xs ${getSenderColor(message.sender_type)}`}>
+                      {message.sender_type}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {message.metadata.sender_name}
+                      {message.sender_name}
                     </span>
                   </div>
                   <div
@@ -139,10 +137,10 @@ export default function TicketChat({ ticket, initialMessages }: TicketChatProps)
                         : 'bg-blue-600 text-white'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.metadata.message}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.message}</p>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {formatDate(message.metadata.timestamp || message.created_at)}
+                    {formatDate(message.created_at)}
                   </div>
                 </div>
               </div>
